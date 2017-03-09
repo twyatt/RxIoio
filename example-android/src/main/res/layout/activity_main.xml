@@ -12,8 +12,27 @@
     tools:context=".MainActivity">
 
     <TextView
+        android:id="@+id/status_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!"/>
+        android:text="@string/status"/>
+
+    <TextView
+        android:id="@+id/status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:layout_marginStart="5dp"
+        android:layout_toEndOf="@id/status_label"
+        android:layout_toRightOf="@id/status_label"
+        android:text="@string/disconnected"/>
+
+    <Button
+        android:id="@+id/stat_led"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/status_label"
+        android:text="@string/turn_stat_led_on"
+        />
 
 </RelativeLayout>

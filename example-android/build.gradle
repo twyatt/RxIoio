@@ -9,6 +9,7 @@ buildscript {
 android {
     compileSdkVersion 24
     buildToolsVersion "24.0.2"
+
     defaultConfig {
         applicationId "com.traviswyatt.rxioio2"
         minSdkVersion 14
@@ -17,6 +18,7 @@ android {
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -35,6 +37,11 @@ dependencies {
     compile 'com.github.ytai.ioio:IOIOLibAndroidBluetooth:5.07'
     compile 'com.github.ytai.ioio:IOIOLibAndroidAccessory:5.07'
     compile 'com.github.ytai.ioio:IOIOLibAndroidDevice:5.07'
+
+    compile 'com.jakewharton:butterknife:8.5.1'
+    annotationProcessor 'com.jakewharton:butterknife-compiler:8.5.1'
+
+    compile 'com.jakewharton.rxbinding2:rxbinding:2.0.0'
 
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'

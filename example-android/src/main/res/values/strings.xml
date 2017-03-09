@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">RxIoio</string>
+    <string name="status">Status:</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="turn_stat_led_on">Turn Stat LED ON</string>
+    <string name="turn_stat_led_off">Turn Stat LED OFF</string>
 </resources>
