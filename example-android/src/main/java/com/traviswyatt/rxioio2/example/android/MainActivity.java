@@ -4,35 +4,31 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
-
-import com.jakewharton.rxbinding2.view.RxView;
-import com.jakewharton.rxbinding2.widget.RxTextView;
-import com.traviswyatt.rxioio2.RxIoio;
-
 import butterknife.BindString;
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import io.reactivex.BackpressureStrategy;
-import io.reactivex.Flowable;
+import com.jakewharton.rxbinding2.view.RxView;
+import com.jakewharton.rxbinding2.widget.RxTextView;
+import com.traviswyatt.rxioio2.RxIoio;
 import io.reactivex.Observable;
 import io.reactivex.annotations.NonNull;
-import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.annotations.Nullable;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Function;
-import io.reactivex.subscribers.DisposableSubscriber;
+import io.reactivex.observers.DisposableObserver;
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.util.IOIOLooper;
 import ioio.lib.util.android.IOIOActivity;
 
 public class MainActivity extends IOIOActivity {
-
     private static final String TAG = MainActivity.class.getSimpleName();
 
     @BindView(R.id.status) TextView statusView;
     @BindView(R.id.stat_led) Button statLedView;
     @BindString(R.string.turn_stat_led_on) String turnStateLedOnText;
 
-    private Flowable<Boolean> statLedState;
+    private Observable<Boolean> statLedState;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,9 +58,8 @@ public class MainActivity extends IOIOActivity {
                 })
                 .subscribe(RxTextView.textRes(statLedView));
 
-        // Create a Flowable that inverts toggle state (stat LED: false = ON,
-        // true = OFF) and also replays last seen state (in case of IOIO
-        // reconnect).
+        // Create a Observable that inverts toggle state (stat LED: false = ON, true = OFF) and also
+        // replays last seen state (in case of IOIO reconnect).
         statLedState = statLedToggle
                 .map(new Function<Boolean, Boolean>() {
                     @Override
@@ -75,8 +70,7 @@ public class MainActivity extends IOIOActivity {
                     }
                 })
                 .replay(1)
-                .autoConnect()
-                .toFlowable(BackpressureStrategy.LATEST);
+                .autoConnect();
     }
 
     private void setStatus(final String status) {
@@ -93,19 +87,18 @@ public class MainActivity extends IOIOActivity {
     @Override
     protected IOIOLooper createIOIOLooper() {
         Log.d(TAG, "createIOIOLooper() called");
-        return new IOIOLooper() {
 
-            private CompositeDisposable subscriptions;
+        return new IOIOLooper() {
+            @Nullable private Disposable disposable;
 
             @Override
             public void setup(IOIO ioio) throws ConnectionLostException, InterruptedException {
                 setStatus("Connected");
 
                 RxIoio rxIoio = RxIoio.create(ioio);
-                subscriptions = new CompositeDisposable();
-                subscriptions.add(statLedState
+                disposable = statLedState
                         .lift(rxIoio.digitalOutput(0))
-                        .subscribeWith(new DisposableSubscriber<Boolean>() {
+                        .subscribeWith(new DisposableObserver<Boolean>() {
                             @Override
                             public void onNext(Boolean aBoolean) {
                                 Log.d(TAG, "onNext() called with: aBoolean = [" + aBoolean + "]");
@@ -120,7 +113,7 @@ public class MainActivity extends IOIOActivity {
                             public void onComplete() {
                                 Log.d(TAG, "onComplete() called");
                             }
-                        }));
+                        });
             }
 
             @Override
@@ -131,13 +124,17 @@ public class MainActivity extends IOIOActivity {
             @Override
             public void disconnected() {
                 setStatus("Disconnected");
-                subscriptions.dispose();
+                if (disposable != null) {
+                    disposable.dispose();
+                }
             }
 
             @Override
             public void incompatible() {
                 setStatus("Incompatible");
-                subscriptions.dispose();
+                if (disposable != null) {
+                    disposable.dispose();
+                }
             }
 
             @Override
@@ -146,5 +143,4 @@ public class MainActivity extends IOIOActivity {
             }
         };
     }
-
 }

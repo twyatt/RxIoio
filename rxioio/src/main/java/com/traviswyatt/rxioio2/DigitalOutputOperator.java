@@ -1,15 +1,13 @@
 package com.traviswyatt.rxioio2;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-
-import io.reactivex.FlowableOperator;
+import io.reactivex.ObservableOperator;
+import io.reactivex.Observer;
+import io.reactivex.disposables.Disposable;
 import ioio.lib.api.DigitalOutput;
 import ioio.lib.api.IOIO;
 import ioio.lib.api.exception.ConnectionLostException;
 
-class DigitalOutputOperator implements FlowableOperator<Boolean, Boolean> {
-
+class DigitalOutputOperator implements ObservableOperator<Boolean, Boolean> {
     private final IOIO ioio;
     private final DigitalOutput.Spec spec;
     private final boolean startValue;
@@ -21,30 +19,29 @@ class DigitalOutputOperator implements FlowableOperator<Boolean, Boolean> {
     }
 
     @Override
-    public Subscriber<? super Boolean> apply(Subscriber<? super Boolean> downstream) throws Exception {
+    public Observer<? super Boolean> apply(Observer<? super Boolean> downstream) throws Exception {
         return new Op(downstream);
     }
 
-    private final class Op implements Subscriber<Boolean>, Subscription {
-
-        private Subscription upstream;
-        private final Subscriber<? super Boolean> downstream;
+    private final class Op implements Observer<Boolean> {
+        private Disposable upstream;
+        private final Observer<? super Boolean> downstream;
 
         private DigitalOutput output;
 
-        Op(Subscriber<? super Boolean> downstream) {
+        Op(Observer<? super Boolean> downstream) {
             this.downstream = downstream;
         }
 
         @Override
-        public void onSubscribe(Subscription s) {
-            upstream = s;
+        public void onSubscribe(Disposable d) {
+            upstream = d;
 
             try {
                 output = ioio.openDigitalOutput(spec, startValue);
-                downstream.onSubscribe(s);
+                downstream.onSubscribe(d);
             } catch (ConnectionLostException e) {
-                upstream.cancel();
+                upstream.dispose();
                 downstream.onError(e);
             }
         }
@@ -55,7 +52,7 @@ class DigitalOutputOperator implements FlowableOperator<Boolean, Boolean> {
                 output.write(aBoolean);
                 downstream.onNext(aBoolean);
             } catch (ConnectionLostException e) {
-                upstream.cancel();
+                upstream.dispose();
                 downstream.onError(e);
             }
         }
@@ -70,17 +67,5 @@ class DigitalOutputOperator implements FlowableOperator<Boolean, Boolean> {
             output.close();
             downstream.onComplete();
         }
-
-        @Override
-        public void request(long n) {
-            upstream.request(n);
-        }
-
-        @Override
-        public void cancel() {
-            upstream.cancel();
-        }
-
     }
-
 }
